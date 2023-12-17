@@ -39,6 +39,17 @@ MODEL_URL = 'https://github.com/tesseract-ocr/tessdata_best/raw/main/{}.trainedd
 
 class TesseractOCRModel(m.OCRModel):
     """OCRtranslate plugin to allow usage of Tesseract models."""
+    ALLOWED_OPTIONS = {
+        **m.OCRModel.ALLOWED_OPTIONS,
+        'favor_vertical': {
+            'type': bool,
+            'default': True,
+            'description': (
+                'For languages that can be written vertically, will favor vertical detection mode (psm 5) if box '
+                'height is greater than box width within a certain threshold.'
+                )
+        },
+    }
     VERTICAL_LANGS = ['jpn', 'chi_tra', 'chi_sim', 'kor']
     config = False
 
@@ -142,6 +153,8 @@ class TesseractOCRModel(m.OCRModel):
         logger.info(f'Running tesseract for language {lang}')
 
         favor_vertical = options.get('favor_vertical', True)
+        if isinstance(favor_vertical, str):
+            favor_vertical = favor_vertical.lower() == 'true'
 
         psm = 6
         if lang in self.VERTICAL_LANGS:

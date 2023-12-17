@@ -207,3 +207,32 @@ def test_tesseract_pipeline_psm_vert(monkeypatch, mock_called, tesseract_model):
 
     assert hasattr(mock_called, 'called')
     assert '--psm 5' in mock_called.kwargs['config']
+
+
+@pytest.mark.parametrize('mock_called', [{'text': 0}], indirect=True)
+def test_tesseract_pipeline_psm_vert_nofavor(monkeypatch, mock_called, tesseract_model):
+    """Test the tesseract pipeline."""
+    monkeypatch.setattr(tesseract_model, 'create_config', lambda *args, **kwargs: None)
+    monkeypatch.setattr(tesseract_model, 'download_model', lambda *args, **kwargs: None)
+    monkeypatch.setattr(octt_plugin, 'image_to_string', mock_called)
+
+    image = Image.new('RGB', (100, 100))
+    lang = tesseract_model.VERTICAL_LANGS[0]
+    tesseract_model._ocr(image, lang, options={'favor_vertical': False}) # pylint: disable=protected-access
+
+    assert hasattr(mock_called, 'called')
+    assert '--psm 6' in mock_called.kwargs['config']
+
+@pytest.mark.parametrize('mock_called', [{'text': 0}], indirect=True)
+def test_tesseract_pipeline_psm_vert_nofavor_string(monkeypatch, mock_called, tesseract_model):
+    """Test the tesseract pipeline."""
+    monkeypatch.setattr(tesseract_model, 'create_config', lambda *args, **kwargs: None)
+    monkeypatch.setattr(tesseract_model, 'download_model', lambda *args, **kwargs: None)
+    monkeypatch.setattr(octt_plugin, 'image_to_string', mock_called)
+
+    image = Image.new('RGB', (100, 100))
+    lang = tesseract_model.VERTICAL_LANGS[0]
+    tesseract_model._ocr(image, lang, options={'favor_vertical': 'FaLsE'}) # pylint: disable=protected-access
+
+    assert hasattr(mock_called, 'called')
+    assert '--psm 6' in mock_called.kwargs['config']
