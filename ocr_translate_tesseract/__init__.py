@@ -18,7 +18,7 @@
 ###################################################################################
 """Plugin to implement tesseract OCR for ocr_translate."""
 
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 
 tesseract_ocr_model_data = {
     'name': 'tesseract',
