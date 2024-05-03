@@ -62,7 +62,7 @@ class TesseractOCRModel(m.OCRModel):
 
         root = Path(os.environ.get('TRANSFORMERS_CACHE', '.'))
         self.data_dir = Path(os.getenv('TESSERACT_PREFIX', root / 'tesseract'))
-        self.download = os.getenv('TESSERACT_ALLOW_DOWNLOAD', 'false').lower() == 'true'
+        self.download = os.getenv('TESSERACT_ALLOW_DOWNLOAD', 'true').lower() == 'true'
 
     def download_model(self, lang: str):
         """Download a tesseract model for a given language.
