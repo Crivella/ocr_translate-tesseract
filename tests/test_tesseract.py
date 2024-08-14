@@ -81,6 +81,18 @@ def test_download_model_env_enabled(monkeypatch, tmpdir, mock_content, tesseract
     with open(tmpfile, 'rb') as f:
         assert f.read() == mock_content
 
+def test_download_model_env_default(monkeypatch, tmpdir, mock_content, tesseract_model_dict):
+    """Test the download of a model from the environment variable."""
+    monkeypatch.setenv('TESSERACT_PREFIX', str(tmpdir))
+    tesseract_model = octt_plugin.TesseractOCRModel(**tesseract_model_dict)
+
+    model = 'test'
+    tesseract_model.download_model(model)
+    tmpfile = tmpdir / f'{model}.traineddata'
+    assert tmpfile.exists()
+    with open(tmpfile, 'rb') as f:
+        assert f.read() == mock_content
+
 def test_download_already_exists(monkeypatch, tmpdir, mock_called, tesseract_model):
     """Test the download of a model from the environment variable."""
     monkeypatch.setattr(tesseract_model, 'download', True)
