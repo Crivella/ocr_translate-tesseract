@@ -60,8 +60,13 @@ class TesseractOCRModel(m.OCRModel):
         """Initialize the model."""
         super().__init__(*args, **kwargs)
 
-        root = Path(os.environ.get('TRANSFORMERS_CACHE', '.'))
-        self.data_dir = Path(os.getenv('TESSERACT_PREFIX', root / 'tesseract'))
+        if 'TESSERACT_PREFIX' in os.environ:
+            self.data_dir = Path(os.environ.get('TESSERACT_PREFIX'))
+        elif 'OCT_BASE_DIR' in os.environ:
+            self.data_dir = Path(os.environ.get('OCT_BASE_DIR')) / 'models' / 'tesseract'
+        else:
+            raise ValueError('No TESSERACT_PREFIX or OCT_BASE_DIR environment variable found.')
+        self.data_dir.mkdir(exist_ok=True, parents=True)
         self.download = os.getenv('TESSERACT_ALLOW_DOWNLOAD', 'true').lower() == 'true'
 
     def download_model(self, lang: str):

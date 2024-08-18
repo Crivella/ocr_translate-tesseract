@@ -35,6 +35,20 @@ def mock_content():
     return b'content'
 
 @pytest.fixture(autouse=True)
+def base(monkeypatch, tmpdir) -> Path:
+    """Mock base classes."""
+    tmp = str(tmpdir / 'base')
+    monkeypatch.setenv('OCT_BASE_DIR', tmp)
+    return Path(tmp)
+
+@pytest.fixture()
+def prefix(monkeypatch, tmpdir) -> Path:
+    """Mock base classes."""
+    tmp = str(tmpdir / 'prefix')
+    monkeypatch.setenv('TESSERACT_PREFIX', tmp)
+    return Path(tmp)
+
+@pytest.fixture(autouse=True)
 def mock_get(request, monkeypatch, mock_content):
     """Mock the get method of requests."""
     scode = getattr(request, 'param', {}).get('status_code', 200)
@@ -49,7 +63,29 @@ def mock_get(request, monkeypatch, mock_content):
 
     monkeypatch.setattr(octt_plugin.requests, 'get', mock_function)
 
+
+def test_env_none(monkeypatch):
+    """Test that no env set causes ValueError."""
+    monkeypatch.delenv('OCT_BASE_DIR', raising=False)
+    with pytest.raises(ValueError):
+        octt_plugin.TesseractOCRModel()
+
+def test_env_tesseract_prefix(prefix):
+    """Test that the TESSERACT_PREFIX environment variable is set."""
+    assert not prefix.exists()
+    cls = octt_plugin.TesseractOCRModel()
+    assert cls.data_dir == prefix
+    assert prefix.exists()
+
+def test_env_base_dir(base):
+    """Test that the OCT_BASE_DIR environment variable is set."""
+    assert not base.exists()
+    cls = octt_plugin.TesseractOCRModel()
+    assert str(cls.data_dir).startswith(str(base))
+    assert base.exists()
+
 def test_download_url():
+
     """Test the download url."""
     from ocr_translate_tesseract.plugin import MODEL_URL
     url = MODEL_URL.format('eng')
@@ -157,14 +193,13 @@ def test_create_config_many(monkeypatch, mock_called, tesseract_model):
 
     assert not hasattr(mock_called, 'called')
 
-def test_tesseract_pipeline_nomodel(monkeypatch, mock_called, tmpdir, tesseract_model):
+def test_tesseract_pipeline_nomodel(monkeypatch, mock_called, tesseract_model):
     """Test the tesseract pipeline."""
     mock_result = 'mock_ocr_result'
     def mock_tesseract(*args, **kwargs):
         return {'text': mock_result}
     monkeypatch.setattr(tesseract_model, 'config', True)
     monkeypatch.setattr(tesseract_model, 'download', True)
-    monkeypatch.setattr(tesseract_model, 'data_dir', Path(tmpdir))
 
     monkeypatch.setattr(tesseract_model, 'download_model', mock_called)
     monkeypatch.setattr(octt_plugin, 'image_to_string', mock_tesseract)
@@ -173,16 +208,15 @@ def test_tesseract_pipeline_nomodel(monkeypatch, mock_called, tmpdir, tesseract_
 
     assert hasattr(mock_called, 'called')
     assert res == mock_result
-    assert len(tmpdir.listdir()) == 0 # No config should be written and download is mocked
+    assert len(list(tesseract_model.data_dir.iterdir())) == 0 # No config should be written and download is mocked
 
-def test_tesseract_pipeline_noconfig(monkeypatch, mock_called, tmpdir, tesseract_model):
+def test_tesseract_pipeline_noconfig(monkeypatch, mock_called, tesseract_model):
     """Test the tesseract pipeline."""
     mock_result = 'mock_ocr_result'
     def mock_tesseract(*args, **kwargs):
         return {'text': mock_result}
     monkeypatch.setattr(tesseract_model, 'config', False)
     monkeypatch.setattr(tesseract_model, 'download', True)
-    monkeypatch.setattr(tesseract_model, 'data_dir', Path(tmpdir))
 
     monkeypatch.setattr(tesseract_model, 'create_config', mock_called)
     monkeypatch.setattr(tesseract_model, 'download_model', lambda *args, **kwargs: None)
@@ -192,7 +226,7 @@ def test_tesseract_pipeline_noconfig(monkeypatch, mock_called, tmpdir, tesseract
 
     assert hasattr(mock_called, 'called')
     assert res == mock_result
-    assert len(tmpdir.listdir()) == 0 # No file should be downloaded (lambda mocked) and config is mocked
+    assert len(list(tesseract_model.data_dir.iterdir())) == 0 # No config should be written and download is mocked
 
 @pytest.mark.parametrize('mock_called', [{'text': 0}], indirect=True)
 def test_tesseract_pipeline_psm_horiz(monkeypatch, mock_called, tesseract_model):
